@@ -71,7 +71,10 @@ def main():
 
     if args.wipe:
         print("Wiping database at %s" % (database_path,))
-        os.remove(database_path)
+        try:
+            os.remove(database_path)
+        except:
+            pass
 
     engine = create_engine('sqlite:///%s' % (database_path,))
     DBSession = sessionmaker(bind=engine)
