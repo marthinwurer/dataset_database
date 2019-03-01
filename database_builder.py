@@ -28,6 +28,7 @@ def store_image_paths(base_dir, session):
             try:
                 item = Item(path=full_path)
                 session.add(item)
+                session.commit()
             except IntegrityError as e:
                 print("image already exists: %s" % (full_path,))
 
@@ -46,6 +47,7 @@ def store_item_urls(base_dir, session):
                     try:
                         item = Item(url=line)
                         session.add(item)
+                        session.commit()
                     except IntegrityError as e:
                         print("url already exists: %s" % (line,))
 
