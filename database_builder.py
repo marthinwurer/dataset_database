@@ -52,6 +52,10 @@ def store_item_urls(base_dir, session):
                         print("url already exists: %s" % (line,))
 
 
+"""
+python database_builder.py --urls ./data/database.db /mnt/nas/datasets/nsfw_data_source_urls/raw_data/ethnicity_asian/
+"""
+
 
 def main():
     parser = argparse.ArgumentParser(description='Short sample app')
