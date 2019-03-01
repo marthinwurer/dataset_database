@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 from tqdm import tqdm
 
-from SQLTypes import Item
+from SQLTypes import Item, Base
 
 """
 $ python database_builder.py /mnt/nas/datasets/database.db /mnt/nas/datasets/visualgenome/VG_100K/
@@ -79,6 +79,7 @@ def main():
             pass
 
     engine = create_engine('sqlite:///%s' % (database_path,))
+    Base.metadata.create_all(engine)
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
 
