@@ -1,0 +1,11 @@
+.idea/
+data/
+saved_nets/
+.python-version
+_vizdoom.ini
+__pycache__/
+*.db
+*.png
+*.jpg
+*.gif
+*.mp4
