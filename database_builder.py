@@ -1,6 +1,7 @@
 import argparse
 import glob
 import os
+import sys
 import tempfile
 
 from sqlalchemy import create_engine
@@ -8,7 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 from tqdm import tqdm
 
-from SQLTypes import Item, Base
+from SQLTypes import Item, Base, download_urls
 
 """
 $ python database_builder.py /mnt/nas/datasets/database.db /mnt/nas/datasets/visualgenome/VG_100K/
@@ -30,7 +31,8 @@ def store_image_paths(base_dir, session):
                 session.add(item)
                 session.commit()
             except IntegrityError as e:
-                print("image already exists: %s" % (full_path,))
+                session.rollback()
+                # print("image already exists: %s" % (full_path,))
 
 
 def store_item_urls(base_dir, session):
@@ -49,7 +51,8 @@ def store_item_urls(base_dir, session):
                         session.add(item)
                         session.commit()
                     except IntegrityError as e:
-                        print("url already exists: %s" % (line,))
+                        session.rollback()
+                        # print("url already exists: %s" % (line,))
 
 
 """
@@ -64,6 +67,9 @@ def main():
     parser.add_argument('--urls', action="store_true")
     parser.add_argument('--images', action="store_true")
     parser.add_argument('--hash', action="store_true")
+    parser.add_argument('--count', action="store_true")
+    parser.add_argument('--download', action="store_true")
+    parser.add_argument('--data-dir')
 
     parser.add_argument('database')
     parser.add_argument('base_dir')
@@ -92,6 +98,16 @@ def main():
 
     if args.urls:
         store_item_urls(base_dir, session)
+
+    if args.count:
+        item_count = session.query(Item).count()
+        print("Item Count: %s" % (item_count,))
+
+    if args.download:
+        if not args.data_dir:
+            print("Error: missing data directory")
+            sys.exit(1)
+        download_urls(session, args.data_dir)
 
     # download missing urls
     temp_dir = tempfile.mkdtemp()

@@ -25,6 +25,7 @@ class Item(Base):
     title = Column(String)
     description = Column(String)
     alias = Column(Integer)
+    success = Column(Integer)
     tags = relationship("ItemTag", back_populates="item")
 
     def __repr__(self):
@@ -79,7 +80,36 @@ def hash_path(digest, subdirs=4, dir_len=4):
     return (os.path.join(*dirs[:subdirs]), "".join(dirs[subdirs:]))
 
 
+def next_hashless(session):
+    finished = False
+    while not finished:
+        item = session.query(Item).filter(Item.hash == None,
+                                          Item.url != None,
+                                          Item.alias == None,
+                                          Item.success == None).first()
+        if item is None:
+            finished = True
+        else:
+            yield item
+
+
+def download_urls(session, data_dir):
+    for item in next_hashless(session):
+        try:
+            print("Downloading %s" % (item.url,))
+            download_item(item, data_dir, session)
+        except:
+            print("Failed")
+            item.success = 0
+
+        # update database
+        session.add(item)
+        session.commit()
+
+
+
 def download_item(item: Item, dir, session):
+
 
     # download file
     filename = os.path.basename(urlparse(item.url).path)
@@ -123,11 +153,8 @@ def download_item(item: Item, dir, session):
     else:
         # image already exists, set it as an alias
         item.alias = exists.id
-        session.update(item)
+        # session.query(Item).get(Item.id).update(item)
 
-    # update database
-    session.add(item)
-    session.commit()
 
 
 
