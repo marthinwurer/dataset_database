@@ -98,6 +98,8 @@ def download_urls(session, data_dir):
         try:
             print("Downloading %s" % (item.url,))
             download_item(item, data_dir, session)
+        except (KeyboardInterrupt, SystemExit):
+            raise
         except:
             print("Failed")
             item.success = 0
@@ -109,11 +111,15 @@ def download_urls(session, data_dir):
 
 
 def download_item(item: Item, dir, session):
+    skip_types = [".mp4"]
 
 
     # download file
     filename = os.path.basename(urlparse(item.url).path)
     # print("Filename: %s" % (filename,))
+    extension = os.path.splitext(filename)[1]
+    if extension in skip_types:
+        raise ValueError(extension)
     file_path = os.path.join(dir, filename)
 
     r = requests.get(item.url, stream=True)
