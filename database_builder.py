@@ -19,9 +19,9 @@ python database_builder.py --wipe /mnt/nas/datasets/database.db /mnt/nas/dataset
 def store_image_paths(base_dir, session):
     types = [".jpg", ".png", ".gif"]
     for root, dirs, files in tqdm(os.walk(base_dir)):
-        print(files)
+        # print(files)
         basenames = [os.path.splitext(file) for file in files]
-        print(basenames)
+        # print(basenames)
         image_files = filter(lambda x: os.path.splitext(x)[1] in types, files)
         for file in tqdm(image_files):
             full_path = os.path.join(root, file)
@@ -34,7 +34,7 @@ def store_image_paths(base_dir, session):
 
 def store_item_urls(base_dir, session):
     for root, dirs, files in tqdm(os.walk(base_dir)):
-        print(root, dirs, files)
+        # print(root, dirs, files)
         images_dir = os.path.join(root, "IMAGES")
         # find images files
         for file in glob.iglob(root + "/urls.txt"):
