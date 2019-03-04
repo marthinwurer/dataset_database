@@ -137,21 +137,22 @@ def download_item(item: Item, dir, session):
         # new image, save and move it
         # compute path
         path, new_name = hash_path(digest, 2)
-        new_name += os.path.splitext(filename)[1]
-        # print(path, new_name)
+        new_filename = new_name+ os.path.splitext(filename)[1]
+
         # move file
+        new_path = os.path.join(".", path, new_filename)
         new_dir = os.path.join(dir, path)
-        new_path = os.path.join(new_dir, new_name)
+        new_location = os.path.join(dir, new_path)
+
         os.makedirs(new_dir, exist_ok=True)
-        os.rename(file_path, new_path)
+        os.rename(file_path, new_location)
 
         item.hash = digest
         item.path = new_path
     else:
-        # TODO remove downloaded image
+        os.remove(file_path)
         # image already exists, set it as an alias
         item.alias = exists.id
-        # session.query(Item).get(Item.id).update(item)
 
 
 def default_session(database_path=None):
