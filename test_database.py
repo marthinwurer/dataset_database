@@ -8,8 +8,8 @@ from datasets import Item
 class DatasetTest(unittest.TestCase):
     def test_image_download(self):
         url = "https://homepages.cae.wisc.edu/~ece533/images/cat.png"
-        path = "./data"
-        database = "./data/database.db"
+        path = "./test_data"
+        database = "./test_data/database.db"
         conn = sqlite3.connect(database)
         item = download_item(conn, Item(url=url), path)
 

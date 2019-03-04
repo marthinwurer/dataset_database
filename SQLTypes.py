@@ -7,7 +7,7 @@ import requests
 from PIL import Image
 from sqlalchemy import Column, ForeignKey, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, sessionmaker, Query
 from sqlalchemy import create_engine
 
 Base = declarative_base()
@@ -35,10 +35,6 @@ class Item(Base):
         """Load the file into a PIL image"""
         return Image.open(self.path)
 
-    def hash_file(self):
-        """load the file and hash it"""
-        pass
-
 
 class Tag(Base):
     __tablename__ = 'tag'
@@ -62,17 +58,9 @@ class ItemTag(Base):
     tag = relationship("Tag", back_populates="items")
 
 
-def main():
-    # Create an engine that stores data in the local directory's
-    # sqlalchemy_example.db file.
-    engine = create_engine('sqlite:///sqlalchemy_example.db')
-
-    # Create all tables in the engine. This is equivalent to "Create Table"
-    # statements in raw SQL.
-    Base.metadata.create_all(engine)
 
 
-def hash_path(digest, subdirs=4, dir_len=4):
+def hash_path(digest, dir_len, subdirs=4):
     dirs = [digest[i:i + dir_len] for i in range(0, len(digest), dir_len)]
     for i in range(subdirs):
         dirs.append(digest[i*4:(i+1)*4])
@@ -81,12 +69,18 @@ def hash_path(digest, subdirs=4, dir_len=4):
 
 
 def next_hashless(session):
+    return query_iterator(
+        session.query(Item).filter(
+                                Item.hash == None,
+                                Item.url != None,
+                                Item.alias == None,
+                                Item.success == None))
+
+
+def query_iterator(query: Query):
     finished = False
     while not finished:
-        item = session.query(Item).filter(Item.hash == None,
-                                          Item.url != None,
-                                          Item.alias == None,
-                                          Item.success == None).first()
+        item = query.first()
         if item is None:
             finished = True
         else:
@@ -109,7 +103,6 @@ def download_urls(session, data_dir):
         session.commit()
 
 
-
 def download_item(item: Item, dir, session):
     skip_types = [".mp4"]
 
@@ -125,9 +118,7 @@ def download_item(item: Item, dir, session):
     r = requests.get(item.url, stream=True)
     # print("Headers: %s" % (r.headers,))
 
-    salt = b"cat"
-    hasher = hashlib.md5()
-    hasher.update(salt)  # this is not secure, but just because I want to
+    hasher = get_hasher()
 
     with open(file_path, 'wb') as fd:
         for chunk in r.iter_content(chunk_size=128):
@@ -145,7 +136,7 @@ def download_item(item: Item, dir, session):
     if not exists:
         # new image, save and move it
         # compute path
-        path, new_name = hash_path(digest)
+        path, new_name = hash_path(digest, 2)
         new_name += os.path.splitext(filename)[1]
         # print(path, new_name)
         # move file
@@ -157,14 +148,52 @@ def download_item(item: Item, dir, session):
         item.hash = digest
         item.path = new_path
     else:
+        # TODO remove downloaded image
         # image already exists, set it as an alias
         item.alias = exists.id
         # session.query(Item).get(Item.id).update(item)
 
 
+def default_session(database_path=None):
+    if database_path is None:
+        database_path = "/mnt/nas/datasets/my_db/data/database.db"
+    engine = create_engine('sqlite:///%s' % (database_path,))
+    Base.metadata.create_all(engine)
+    DBSession = sessionmaker(bind=engine)
+    session = DBSession()
+    return session
+
+
+def hash_file(path):
+    hasher = get_hasher()
+    with open(path, mode='rb') as file:
+        for chunk in file:
+            hasher.update(chunk)
+    return hasher
+
+
+def buffer_iterator(buffer, max_size=1024):
+    while True:
+        buf = buffer.read(max_size)
+        if not buf:
+            break
+        yield buf
 
 
 
+def get_hasher():
+    salt = b"cat"
+    hasher = hashlib.md5()
+    hasher.update(salt)  # this is not secure, but just because I want to
+    return hasher
+
+def main():
+    database_path = "/mnt/nas/datasets/my_db/data/database.db"
+    engine = create_engine('sqlite:///%s' % (database_path,))
+    Base.metadata.create_all(engine)
+    DBSession = sessionmaker(bind=engine)
+    session = DBSession()
+    print(session.query(Item).count())
 
 
 if __name__ == "__main__":

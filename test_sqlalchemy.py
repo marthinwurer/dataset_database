@@ -45,6 +45,10 @@ class DatasetTest(unittest.TestCase):
 
 
 
+"""
+engine = create_engine('sqlite:///mnt/nas/datasets/my_db/data/database.db')
+
+"""
 
 
 
