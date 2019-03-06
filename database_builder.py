@@ -93,6 +93,10 @@ def get_session(args):
     return session
 
 
+"""
+"""
+
+
 def main():
     parser = argparse.ArgumentParser(description="Builds a machine learning database")
 
