@@ -82,18 +82,26 @@ def next_hashless(session):
 
 def query_iterator(query: Query):
     finished = False
-    while not finished:
+    while True:
         item = query.first()
         if item is None:
-            finished = True
-        else:
-            yield item
+            break
+        yield item
 
 def query_tq(query: Query):
     count = query.count()
     iterator = query_iterator(query)
     tq = tqdm(iterator, total=count, smoothing=0.05)
     return tq
+
+
+def q_all_tq(query: Query):
+    count = query.count()
+    all = query.all()
+    tq = tqdm(all, total=count, smoothing=0.05)
+    return tq
+
+
 
 
 def download_urls(session, data_dir):

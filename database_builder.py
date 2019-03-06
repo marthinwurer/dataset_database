@@ -1,5 +1,6 @@
 import argparse
 import glob
+import json
 import os
 import sys
 import tempfile
@@ -56,27 +57,27 @@ def store_item_urls(base_dir, session):
 
 
 def import_images(args):
-    session = get_session(args)
+    session = get_postgresql_db(args)
     store_image_paths(args.source_dir, session)
 
 
 def import_urls(args):
-    session = get_session(args)
+    session = get_postgresql_db(args)
     store_item_urls(args.source_dir, session)
 
 
 def download(args):
-    session = get_session(args)
+    session = get_postgresql_db(args)
     download_urls(session, args.data_dir)
 
 
 def count(args):
-    session = get_session(args)
+    session = get_postgresql_db(args)
     item_count = session.query(Item).count()
     print("Item Count: %s" % (item_count,))
 
 
-def get_session(args):
+def get_sqlite_db(args):
     database_path = args.data_dir + "/database.db"
 
     if args.wipe:
@@ -92,9 +93,24 @@ def get_session(args):
     session = DBSession()
     return session
 
+def get_postgresql_db(args):
+    if not args.credentials:
+        print("Error: no credentials file")
 
-"""
-"""
+    with open(args.credentials) as cred_file:
+        creds = json.load(cred_file)
+
+    user = creds['user']
+    password = creds['pass']
+    hostname = creds['host']
+    db_name = creds['db']
+
+    engine = create_engine('postgresql://%s:%s@%s/%s' % (user, password, hostname, db_name))
+    Base.metadata.create_all(engine)
+    DBSession = sessionmaker(bind=engine)
+    session = DBSession()
+    print("connected to %s" % (db_name,))
+    return session
 
 
 def main():
@@ -102,6 +118,7 @@ def main():
 
     parser.add_argument('--wipe', action="store_true", help="wipe the database")
     parser.add_argument('--hash', action="store_true")
+    parser.add_argument('--credentials', default=None, help="path to credentials json file for database")
     parser.set_defaults(func=lambda *_, **__: None)  # need a default function that will never fail
 
     subparsers = parser.add_subparsers(title="subcommands", dest="subparser_name")
