@@ -125,7 +125,7 @@ def download_urls(session, data_dir):
             item.success = 0
             print("Things went wrong with %s" % (item,))
 
-        except (ValueError, requests.exceptions.ConnectionError) as e:
+        except (ValueError, requests.exceptions.ConnectionError, requests.exceptions.TooManyRedirects) as e:
             # traceback.print_exc()
             print("Failed", type(e), e)
             item.success = 0
