@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 
 import requests
 from PIL import Image
+from requests import ReadTimeout, TooManyRedirects
 from sqlalchemy import Column, ForeignKey, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker, Query
@@ -125,10 +126,13 @@ def download_urls(session, data_dir):
             item.success = 0
             print("Things went wrong with %s" % (item,))
 
-        except (ValueError, requests.exceptions.ConnectionError, requests.exceptions.TooManyRedirects) as e:
+        except (requests.exceptions.ConnectionError, TooManyRedirects, ReadTimeout) as e:
             # traceback.print_exc()
             print("Failed", type(e), e)
             item.success = 0
+        except (ValueError,) as e:
+            item.success = 0
+
 
         # update database
         session.add(item)
@@ -136,21 +140,25 @@ def download_urls(session, data_dir):
 
 
 def download_item(item: Item, dir, session):
-    skip_types = [".mp4"]
+    skip_types = [".mp4", ".gif"]
 
 
     # download file
     parsed_url = urlparse(item.url)
 
+    # test against skipping URLs.
+
 
     filename = os.path.basename(parsed_url.path)
+    if len(filename) > 20:
+        filename = filename[-20:]
     # print("Filename: %s" % (filename,))
     extension = os.path.splitext(filename)[1]
     if extension in skip_types:
         raise ValueError(extension)
     file_path = os.path.join(dir, filename)
 
-    r = requests.get(item.url, stream=True)
+    r = requests.get(item.url, stream=True, timeout=5.0)
     # print("Headers: %s" % (r.headers,))
     mime_type = r.headers["Content-Type"]
     mime_info = MIME_TYPES.get(mime_type)
@@ -220,6 +228,8 @@ URL_BLACKLIST = [
     "i.minus.com",
     "anonmgur.com",
     "redditmirror.cc",
+    "rule34-data-000.paheal.net",
+    "artstation.com",
 ]
 
 
